@@ -1,0 +1,80 @@
+#!/usr/bin/python
+# Copyright 2013 Joseph Quinn
+# All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+import os
+import sys
+from optparse import OptionParser
+import pyrax
+import pyrax.exceptions as exc
+
+# Authentication
+# Configure credentials/region
+# Example creds_file:
+#
+# [rackspace_cloud]
+# username = someuser
+# api_key = someapikey
+# region = DFW
+# Configure credentials/region
+
+creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
+try:
+  pyrax.set_credential_file(creds_file)
+except exc.AuthenticationFailed:
+  print 'Failed to authenticate'
+
+parser = OptionParser()
+parser.add_option("-n", "--fqdn", action="store", dest="fqdn", help="Name of A record")
+parser.add_option("-i", "--ip", action="store", dest="ip", help="IP for A record")
+(opts, args) = parser.parse_args()
+
+if not(opts.fqdn and opts.ip):
+  parser.print_help()
+  exit(-1)
+
+dns = pyrax.cloud_dns
+
+thisName, thisTLD = opts.fqdn.split('.')[-2:]
+thisDomain = thisName + '.' + thisTLD
+
+try:
+  dom = dns.find(name=thisDomain)
+
+except pyrax.exceptions.NotFound:
+  print "Domain", thisDomain, "not found. Create it?"
+  prompt=raw_input("y/n ")
+  
+  if prompt == "y":
+    emailAddr=raw_input('Email address: ')
+    dom = dns.create(name=thisDomain, emailAddress=emailAddr)
+  else:
+    print 'Try again specifying the domain.'
+    parser.print_help()
+    exit(0)
+
+recs = [{
+        "type": "A",
+        "name": opts.fqdn,
+        "data": opts.ip,
+        }
+        ]
+
+try:
+  print dom.add_records(recs)
+except:
+  err = sys.exc_info()[0]
+  print err
+  sys.exit(1)

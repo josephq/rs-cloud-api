@@ -1,0 +1,147 @@
+#!/usr/bin/python
+# Copyright 2013 Joseph Quinn
+# All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+# Start configurable options
+server_base_name = "Base"
+num_servers = 2
+image_name = "CentOS 6.3"
+ram_size = 512
+lb = "myLB"
+# End configuration options
+
+import pyrax
+import pyrax.exceptions as exc
+import time
+import datetime
+import os
+import sys
+
+# Authentication
+# Configure credentials/region
+# Example creds_file:
+#
+# [rackspace_cloud]
+# username = someuser
+# api_key = someapikey
+# region = DFW
+
+creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
+try:
+  pyrax.set_credential_file(creds_file)
+except exc.AuthenticationFailed:
+  print 'Failed to authenticate'
+  sys.exit(1)
+
+cs = pyrax.cloudservers
+
+# Get image by name
+server_image = [img for img in cs.images.list()
+if image_name in img.name][0]
+
+# Get flavor by RAM
+server_flavor = [flavor for flavor in cs.flavors.list()
+if flavor.ram == ram_size][0]
+
+# Set up some arrays
+serverData = {}
+node = {}
+
+# Capture time
+serverCreateTime = datetime.datetime.now()
+
+# Start building servers
+for doServer in range(num_servers):
+  doThisServer = server_base_name + str(doServer)
+  print "Creating server " + doThisServer
+  thisServer = cs.servers.create(doThisServer, server_image.id, server_flavor.id)
+  serverData[doServer] = thisServer
+
+# Outer loop to monitor build. Run until all servers complete.
+while True:
+  serversComplete = 0
+
+# Inner loop to monitor build
+  for doServer in range(num_servers):
+  	doThisServer = server_base_name + str(doServer)
+	thisServer = cs.servers.find(name=doThisServer)
+	print datetime.datetime.now()
+	print "Server Name: " + thisServer.name
+	print "Server ID: " + thisServer.id
+	print "Server Status: " + thisServer.status
+	print "Progress: " + str(thisServer.progress)
+	print
+
+	if thisServer.status == "ACTIVE":
+
+		serversComplete += 1
+
+  # Build complete, add to LB
+  if serversComplete == num_servers:
+
+	clb = pyrax.cloud_loadbalancers
+
+	# Create node for 1st server 
+        doThisServer = server_base_name + "0"
+        thisServer = cs.servers.find(name=doThisServer)
+        node[0] = clb.Node(address=serverData[0].networks['private'][0], port=80, condition="ENABLED")
+	
+	# Create LB
+	vip = clb.VirtualIP(type="PUBLIC")
+	lb = clb.create("example_lb", port=80, protocol="HTTP", virtual_ips=[vip], nodes=[node[0]])
+
+	# Wait for LB creation
+	while True:
+		lb = clb.get(lb.id)
+		if lb.status == "ACTIVE":
+		  break
+		time.sleep(60)
+
+	# Add remaining nodes to LB
+	for doServer in range(1, num_servers):
+                doThisServer = server_base_name + str(doServer)
+                thisServer = cs.servers.find(name=doThisServer)
+                node[doServer] = clb.Node(address=serverData[doServer].networks['private'][0], port=80, condition="ENABLED")
+		lb.add_nodes([node[doServer]])
+
+	# Wait for LB updates
+	while True:
+		lb = clb.get(lb.id)
+		if lb.status == "ACTIVE":
+		  break
+		time.sleep(60)
+
+	# Work complete
+	print 'All servers complete and added to LB!'
+	print
+
+	for doServer in range(num_servers):
+	        doThisServer = server_base_name + str(doServer)
+	        thisServer = cs.servers.find(name=doThisServer)
+
+		print "Server Name: " + serverData[doServer].name	
+		print "Root Password: " + serverData[doServer].adminPass	
+		print "Public IPs: ", serverData[doServer].networks['public'][0], serverData[doServer].networks['public'][1]
+		print "Private IPv4: ", serverData[doServer].networks['private'][0]
+
+	print "LB Information: "
+	print lb
+	automationCompleteTime = datetime.datetime.now()
+	totalDeployTime = automationCompleteTime-serverCreateTime 
+	print
+	print 'Time: ' + str(totalDeployTime)
+	sys.exit()
+	
+  time.sleep(20)
