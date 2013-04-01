@@ -1,0 +1,148 @@
+#!/usr/bin/python
+# Copyright 2013 Joseph Quinn
+# All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+import pyrax
+import pyrax.exceptions as exc
+import time
+import datetime
+import os
+import sys
+import re
+from optparse import OptionParser
+
+# Authentication
+# Configure credentials/region
+# Example creds_file:
+#
+# [rackspace_cloud]
+# username = someuser
+# api_key = someapikey
+# region = DFW
+
+creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
+try:
+  pyrax.set_credential_file(creds_file)
+except exc.AuthenticationFailed:
+  print 'Failed to authenticate'
+  sys.exit(1)
+
+def list_images(option, opt, value, parser):
+    for image in cs.images.list():
+        print "Image Name:", image.name
+        print "Image ID:", image.id
+        print
+
+def list_flavors(option, opt, value, parser):
+    for flavor in cs.flavors.list():
+        print "Flavor Name:", flavor.name
+        print "Flavor ID:", flavor.id
+        print
+
+def create_server(option, opt, value, parser):
+
+    for arg in parser.rargs:
+        if [flv for flv in cs.flavors.list() if arg == flv.id]:
+            server_flavor = cs.flavors.get(arg)
+        elif [img for img in cs.images.list() if arg == img.id]:
+            server_image = cs.images.get(arg)
+        elif '.' in arg:
+            server_fqdn = arg
+        
+    try:
+        print 'Flavor:', server_flavor.name
+    except:
+        print 'You must provide a flavor ID'
+        parser.print_help()
+        exit(-1)
+    
+    try:
+        print 'Image:', server_image.name
+    except:
+        print 'You must provide an image ID'
+        parser.print_help()
+        exit(-1)
+
+    try:
+        print 'FQDN:', server_fqdn
+    except:
+        print 'You must provide an FQDN'
+        parser.print_help()
+        exit(-1)
+
+    server = cs.servers.create(server_fqdn, server_image, server_flavor)
+
+    while server.status != 'ACTIVE':
+        server.get()
+        print
+        print "Server Name:", server.name
+        print "Server ID:", server.id
+        print "Server Status:", server.status
+        print "Progress:", server.progress
+        time.sleep(30)
+
+    for ip in server.networks['public']:
+        if '.' in ip:
+            publicIPv4 = ip
+
+    print
+    print "Server Name: ", server.name
+    print "Root Password: ", server.adminPass
+    print "Public IPv4: ", publicIPv4
+    print "Private IPv4: ", server.networks['private'][0]
+    print
+
+    thisName, thisTLD = server_fqdn.split('.')[-2:]
+    thisDomain = thisName + '.' + thisTLD
+
+    try:
+        dom = dns.find(name=thisDomain)
+
+    except pyrax.exceptions.NotFound:
+        print "Domain", thisDomain, "not found. Create it?"
+        prompt=raw_input("y/n ")
+
+        if prompt == "y":
+            emailAddr=raw_input('Email address: ')
+            dom = dns.create(name=thisDomain, emailAddress=emailAddr)
+        else:
+            print 'Exiting'
+            exit(0)
+
+    recs = [{
+            "type": "A",
+            "name": server_fqdn,
+            "data": publicIPv4,
+             }
+            ] 
+
+    try:
+        print dom.add_records(recs)
+    except:
+        err = sys.exc_info()[0]
+        print err
+        sys.exit(1)
+
+cs = pyrax.cloudservers
+dns = pyrax.cloud_dns
+
+parser = OptionParser()
+parser.add_option("-c", "--create-server", action="callback", callback=create_server, help="Create server FlavorID ImageID FQDN")
+parser.add_option("--list-images", action="callback", callback=list_images)
+parser.add_option("--list-flavors", action="callback", callback=list_flavors)
+
+(opts, args) = parser.parse_args()
+
+
