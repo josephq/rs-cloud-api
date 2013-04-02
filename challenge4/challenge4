@@ -13,6 +13,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+#
+# Challenge 4:
+# Write a script that uses Cloud DNS to create a new A record when passed a FQDN and IP address as arguments.
 
 import os
 import sys
@@ -32,9 +35,9 @@ import pyrax.exceptions as exc
 
 creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
 try:
-  pyrax.set_credential_file(creds_file)
+    pyrax.set_credential_file(creds_file)
 except exc.AuthenticationFailed:
-  print 'Failed to authenticate'
+    print 'Failed to authenticate'
 
 parser = OptionParser()
 parser.add_option("-n", "--fqdn", action="store", dest="fqdn", help="Name of A record")
@@ -42,8 +45,8 @@ parser.add_option("-i", "--ip", action="store", dest="ip", help="IP for A record
 (opts, args) = parser.parse_args()
 
 if not(opts.fqdn and opts.ip):
-  parser.print_help()
-  exit(-1)
+    parser.print_help()
+    exit(-1)
 
 dns = pyrax.cloud_dns
 
@@ -51,19 +54,18 @@ thisName, thisTLD = opts.fqdn.split('.')[-2:]
 thisDomain = thisName + '.' + thisTLD
 
 try:
-  dom = dns.find(name=thisDomain)
+    dom = dns.find(name=thisDomain)
 
 except pyrax.exceptions.NotFound:
-  print "Domain", thisDomain, "not found. Create it?"
-  prompt=raw_input("y/n ")
-  
-  if prompt == "y":
-    emailAddr=raw_input('Email address: ')
-    dom = dns.create(name=thisDomain, emailAddress=emailAddr)
-  else:
-    print 'Try again specifying the domain.'
-    parser.print_help()
-    exit(0)
+    print "Domain", thisDomain, "not found. Create it?"
+    prompt = raw_input("y/n ")
+
+    if prompt == "y":
+        emailAddr = raw_input('Email address: ')
+        dom = dns.create(name=thisDomain, emailAddress=emailAddr)
+    else:
+        print 'Exiting.'
+        exit(0)
 
 recs = [{
         "type": "A",
@@ -73,8 +75,8 @@ recs = [{
         ]
 
 try:
-  print dom.add_records(recs)
+    print dom.add_records(recs)
 except:
-  err = sys.exc_info()[0]
-  print err
-  sys.exit(1)
+    err = sys.exc_info()[0]
+    print err
+    sys.exit(1)

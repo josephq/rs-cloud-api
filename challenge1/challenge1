@@ -13,9 +13,12 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+#
+# Challenge 1:
+# Write a script that builds three 512 MB Cloud Servers following a similar naming convention.
 
 # Start configurable options
-server_base_name = "BaseName"
+server_base_name = "BaseServer"
 num_servers = 3
 image_name = "CentOS 6.3"
 ram_size = 512
@@ -39,23 +42,23 @@ import sys
 
 creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
 try:
-  pyrax.set_credential_file(creds_file)
+    pyrax.set_credential_file(creds_file)
 except exc.AuthenticationFailed:
-  print 'Failed to authenticate'
-  sys.exit(1)
+    print 'Failed to authenticate'
+    sys.exit(1)
 
 # Define cs for pyrax
 cs = pyrax.cloudservers
 
 # Get image by name
 server_image = [img for img in cs.images.list()
-if image_name in img.name][0]
+                if image_name in img.name][0]
 
 # Get flavor by RAM
 server_flavor = [flavor for flavor in cs.flavors.list()
-if flavor.ram == ram_size][0]
+                 if flavor.ram == ram_size][0]
 
-# Set up some arrays
+# Initialize serverData
 serverData = {}
 
 # Capture time
@@ -63,52 +66,48 @@ serverCreateTime = datetime.datetime.now()
 
 # Start building servers
 for doServer in range(num_servers):
-  doThisServer = server_base_name + str(doServer)
-  print "Creating server " + doThisServer
-  thisServer = cs.servers.create(doThisServer, server_image.id, server_flavor.id)
-  serverData[doServer] = thisServer
+    doThisServer = server_base_name + str(doServer)
+    print "Creating server " + doThisServer
+    thisServer = cs.servers.create(doThisServer, server_image.id, server_flavor.id)
+    serverData[doServer] = thisServer
 
 # Outer loop to monitor build. Run until all servers complete.
-
-while True:
-  serversComplete = 0
+serversComplete = 0
+while serversComplete != num_servers:
+    serversComplete = 0
 
 # Inner loop to monitor build
+    for doServer in range(num_servers):
+        doThisServer = server_base_name + str(doServer)
+        thisServer = cs.servers.find(name=doThisServer)
+        print datetime.datetime.now()
+        print "Server Name: " + thisServer.name
+        print "Server ID: " + thisServer.id
+        print "Server Status: " + thisServer.status
+        print "Progress: " + str(thisServer.progress)
+        print
 
-  for doServer in range(num_servers):
-  	doThisServer = server_base_name + str(doServer)
-	thisServer = cs.servers.find(name=doThisServer)
-	print datetime.datetime.now()
-	print "Server Name: " + thisServer.name
-	print "Server ID: " + thisServer.id
-	print "Server Status: " + thisServer.status
-	print "Progress: " + str(thisServer.progress)
-	print
+        if thisServer.status == "ACTIVE":
+            serversComplete += 1
+    time.sleep(20)
 
-	if thisServer.status == "ACTIVE":
+# Work complete, exit
 
-		serversComplete += 1
+print 'All servers complete!'
+print
 
-  # Work complete, exit
-  if serversComplete == num_servers:
+for doServer in range(num_servers):
+    doThisServer = server_base_name + str(doServer)
 
-	print 'All servers complete!'
-	print
+    print "Server Name: ", serverData[doServer].name
+    print "Root Password: ", serverData[doServer].adminPass
+    print "Public IPs: ", serverData[doServer].networks['public'][0], serverData[doServer].networks['public'][1]
+    print "Private IPv4: ", serverData[doServer].networks['private'][0]
+    print
 
-	for doServer in range(num_servers):
-	        doThisServer = server_base_name + str(doServer)
-	        thisServer = cs.servers.find(name=doThisServer)
+    automationCompleteTime = datetime.datetime.now()
+    totalDeployTime = automationCompleteTime-serverCreateTime
+    print
 
-		print "Server Name: ", serverData[doServer].name	
-		print "Root Password: ", serverData[doServer].adminPass	
-		print "Public IPs: ", serverData[doServer].networks['public'][0], serverData[doServer].networks['public'][1]
-		print "Private IPv4: ", serverData[doServer].networks['private'][0]
-		print
-
-	automationCompleteTime = datetime.datetime.now()
-	totalDeployTime = automationCompleteTime-serverCreateTime 
-	print
-	print 'Time: ' + str(totalDeployTime)
-	sys.exit(0)
-
-  time.sleep(20)
+print 'Time: ' + str(totalDeployTime)
+sys.exit(0)

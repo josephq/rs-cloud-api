@@ -13,6 +13,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+#
+# Challenge 5: Write a script that creates a Cloud Database instance.
+# This instance should contain at least one database, and the database should have at least one user that can connect to it.
 
 import os
 import sys
@@ -31,10 +34,10 @@ import time
 
 creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
 try:
-  pyrax.set_credential_file(creds_file)
+    pyrax.set_credential_file(creds_file)
 except exc.AuthenticationFailed:
-  print 'Failed to authenticate'
-  sys.exit(1)
+    print 'Failed to authenticate'
+    sys.exit(1)
 
 cdb = pyrax.cloud_databases
 
@@ -42,11 +45,27 @@ Xinstance = raw_input("Instance name:")
 
 print "Available flavors"
 for flavor in cdb.list_flavors():
-  print flavor.name
+    print flavor.name
 
-Xflavor = raw_input("Flavor:")
+while True:
+    Xflavor = raw_input("Flavor:")
+    if [flv for flv in cdb.list_flavors() if Xflavor == flv.name]:
+        break
+    else:
+        print 'You must provide a valid flavor.'
+
 Xdb = raw_input("Database name:")
-Xvolume = raw_input("Volume size (GB):")
+
+while True:
+    Xvolume = raw_input("Volume size (1-50):")
+    if Xvolume.isdigit():
+        if int(Xvolume) > 0 and int(Xvolume) < 51:
+            break
+        else:
+            print 'Volume size must be 1-50'
+    else:
+        print 'Volume size must be 1-50'
+
 Xname = raw_input("User name:")
 Xpassword = raw_input("Password:")
 
@@ -55,18 +74,18 @@ inst = cdb.create(Xinstance, flavor=Xflavor, volume=Xvolume)
 print "Waiting for instance creation..."
 
 while True:
-  time.sleep(5)
-  id=inst.id
-  inst = cdb.get(id)
-  print "Status: ", inst.status
-  if inst.status == "ACTIVE":
-	break
+    time.sleep(5)
+    id = inst.id
+    inst = cdb.get(id)
+    print "Status: ", inst.status
+    if inst.status == "ACTIVE":
+        break
 
+print 'Creating database.'
 db = inst.create_database(Xdb)
-print db
 
+print 'Creating user.'
 user = inst.create_user(name=Xname, password=Xpassword, database_names=db)
-print user
 
-print inst.list_databases()
-print inst.list_users()
+print 'Complete!'
+print 'Hostname:', inst.hostname

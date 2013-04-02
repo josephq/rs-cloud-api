@@ -13,6 +13,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+#
+# Challenge 9:
+# Write an application that when passed the arguments FQDN, image, and flavor 
+# it creates a server of the specified image and flavor with the same name as the fqdn,
+# and creates a DNS entry for the fqdn pointing to the server's public IP.
 
 import pyrax
 import pyrax.exceptions as exc
@@ -34,10 +39,11 @@ from optparse import OptionParser
 
 creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
 try:
-  pyrax.set_credential_file(creds_file)
+    pyrax.set_credential_file(creds_file)
 except exc.AuthenticationFailed:
-  print 'Failed to authenticate'
-  sys.exit(1)
+    print 'Failed to authenticate'
+    sys.exit(1)
+
 
 def list_images(option, opt, value, parser):
     for image in cs.images.list():
@@ -45,11 +51,13 @@ def list_images(option, opt, value, parser):
         print "Image ID:", image.id
         print
 
+
 def list_flavors(option, opt, value, parser):
     for flavor in cs.flavors.list():
         print "Flavor Name:", flavor.name
         print "Flavor ID:", flavor.id
         print
+
 
 def create_server(option, opt, value, parser):
 
@@ -60,14 +68,14 @@ def create_server(option, opt, value, parser):
             server_image = cs.images.get(arg)
         elif '.' in arg:
             server_fqdn = arg
-        
+
     try:
         print 'Flavor:', server_flavor.name
     except:
         print 'You must provide a flavor ID'
         parser.print_help()
         exit(-1)
-    
+
     try:
         print 'Image:', server_image.name
     except:
@@ -112,10 +120,10 @@ def create_server(option, opt, value, parser):
 
     except pyrax.exceptions.NotFound:
         print "Domain", thisDomain, "not found. Create it?"
-        prompt=raw_input("y/n ")
+        prompt = raw_input("y/n ")
 
         if prompt == "y":
-            emailAddr=raw_input('Email address: ')
+            emailAddr = raw_input('Email address: ')
             dom = dns.create(name=thisDomain, emailAddress=emailAddr)
         else:
             print 'Exiting'
@@ -125,15 +133,18 @@ def create_server(option, opt, value, parser):
             "type": "A",
             "name": server_fqdn,
             "data": publicIPv4,
-             }
-            ] 
+            }
+            ]
 
     try:
-        print dom.add_records(recs)
+        record = dom.add_records(recs)
+        record = dom.find_record(name=server_fqdn, record_type='A')
+        print record.type, 'record created for', record.name, 'with data', record.data
     except:
         err = sys.exc_info()[0]
         print err
         sys.exit(1)
+
 
 cs = pyrax.cloudservers
 dns = pyrax.cloud_dns
@@ -145,4 +156,5 @@ parser.add_option("--list-flavors", action="callback", callback=list_flavors)
 
 (opts, args) = parser.parse_args()
 
-
+if not args:
+    print parser.print_help()

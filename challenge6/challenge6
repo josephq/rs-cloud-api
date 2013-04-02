@@ -13,6 +13,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+#
+# Challenge 6: Write a script that creates a CDN-enabled container in Cloud Files.
 
 import os
 import sys
@@ -31,48 +33,55 @@ import pyrax.exceptions as exc
 
 creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
 try:
-  pyrax.set_credential_file(creds_file)
+    pyrax.set_credential_file(creds_file)
 except exc.AuthenticationFailed:
-  print 'Failed to authenticate'
-  sys.exit(1)
+    print 'Failed to authenticate'
+    sys.exit(1)
 
 # Create cloudfiles object
 cf = pyrax.cloudfiles
 
+
 # Create container
 def create_container(arg):
-	try:
-	  container = cf.create_container(arg)
-	  print "Created", container.name
-	except:
-	  print "Operation failed."
-	  err = sys.exc_info()[0]
-	  print err
-	  sys.exit(1)
+    try:
+        container = cf.create_container(arg)
+        print "Created", container.name
+    except:
+        print "Operation failed."
+        err = sys.exc_info()[0]
+        print err
+        sys.exit(1)
+
 
 # CDN enable container
 def cdn_enable(arg):
-	try:
-	  cf.make_container_public(arg)
-	  print "CDN enabled"
-	except:
-	  print "Operation failed."
-	  err = sys.exc_info()[0]
-	  print err
-	  sys.exit(1)
+    try:
+        cf.make_container_public(arg)
+        print "CDN enabled"
+    except:
+        print "Operation failed."
+        err = sys.exc_info()[0]
+        print err
+        sys.exit(1)
+
 
 # Create and CDN enable container
 def create_cdn_container(option, opt, value, parer):
-	try:
-	  create_container(parser.rargs[0])
-	  cdn_enable(parser.rargs[0])
-	except:
-	  print "Operation failed."
-	  err = sys.exc_info()[0]
-	  print err
-	  sys.exit(1)
+    try:
+        create_container(parser.rargs[0])
+        cdn_enable(parser.rargs[0])
+    except:
+        print "Operation failed."
+        err = sys.exc_info()[0]
+        print err
+        sys.exit(1)
+
 
 # Read CLI arguments
 parser = OptionParser()
 parser.add_option("-c", "--create-cdn-container", action="callback", callback=create_cdn_container)
 (opts, args) = parser.parse_args()
+
+if not args:
+    print parser.print_help()

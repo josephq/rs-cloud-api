@@ -13,6 +13,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+#
+# Challenge 2: Write a script that clones a server (takes an image and deploys the image as a new server).
 
 import pyrax
 import pyrax.exceptions as exc
@@ -33,36 +35,37 @@ from optparse import OptionParser
 
 creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
 try:
-  pyrax.set_credential_file(creds_file)
+    pyrax.set_credential_file(creds_file)
 except exc.AuthenticationFailed:
-  print 'Failed to authenticate'
-  sys.exit(1)
+    print 'Failed to authenticate'
+    sys.exit(1)
+
 
 def getVal(obj, key):
-  for attr in dir(obj):
-    if attr == key:
-      return getattr(obj, attr)
+    for attr in dir(obj):
+        if attr == key:
+            return getattr(obj, attr)
+
 
 def waitImage(server):
-  sys.stdout.write("Waiting for image creation to begin...")
-  sys.stdout.flush()
-  while True:
-    obj = cs.servers.find(name=server)
-    sys.stdout.write(".")
+    sys.stdout.write("Waiting for image creation to begin...")
     sys.stdout.flush()
-    if getVal(obj, 'OS-EXT-STS:task_state') == 'image_snapshot':
-      break
-    time.sleep(15)
-
-  sys.stdout.write("\nWaiting for image creation to complete...")
-  sys.stdout.flush()
-  while True:
-    obj = cs.servers.find(name=server)
-    sys.stdout.write(".")
+    while True:
+        obj = cs.servers.find(name=server)
+        sys.stdout.write(".")
+        sys.stdout.flush()
+        if getVal(obj, 'OS-EXT-STS:task_state') == 'image_snapshot':
+            break
+        time.sleep(15)
+    sys.stdout.write("\nWaiting for image creation to complete...")
     sys.stdout.flush()
-    if getVal(obj, 'OS-EXT-STS:task_state') is None:
-      break
-    time.sleep(15)
+    while True:
+        obj = cs.servers.find(name=server)
+        sys.stdout.write(".")
+        sys.stdout.flush()
+        if getVal(obj, 'OS-EXT-STS:task_state') is None:
+            break
+        time.sleep(15)
 
 parser = OptionParser()
 parser.add_option("-s", "--source", action="store", dest="sourceServer", help="Name of server to clone")
@@ -71,8 +74,8 @@ parser.add_option("-c", "--create", action="store", dest="createServer", help="N
 (opts, args) = parser.parse_args()
 
 if not(opts.sourceServer and opts.imageName and opts.createServer):
-  parser.print_help()
-  exit(-1)
+    parser.print_help()
+    exit(-1)
 
 cs = pyrax.cloudservers
 
@@ -87,19 +90,19 @@ waitImage(opts.sourceServer)
 print
 
 # Get flavor of server to clone
-doFlavor = sourceServerObj.flavor['id'] 
+doFlavor = sourceServerObj.flavor['id']
 
 # Create new server from image
 createServerObj = cs.servers.create(opts.createServer, doImage, doFlavor)
 
 # Wait for server build to complete
 while True:
-  thisServer = cs.servers.find(name=opts.createServer)
-  print "Server Status: ", thisServer.status
-  print "Progress: ", str(thisServer.progress)
-  if thisServer.status == "ACTIVE":
-    break
-  time.sleep(15)
+    thisServer = cs.servers.find(name=opts.createServer)
+    print "Server Status: ", thisServer.status
+    print "Progress: ", str(thisServer.progress)
+    if thisServer.status == "ACTIVE":
+        break
+    time.sleep(15)
 
 # Print server details
 print "Server Name: ", thisServer.name

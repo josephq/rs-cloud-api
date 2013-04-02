@@ -13,14 +13,20 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.`
+#
+# Challenge 8:
+# Write a script that will create a static webpage served out of Cloud Files.
+# The script must create a new container, cdn enable it, enable it to serve an index file, 
+# create an index file object, upload the object to the container, and create a CNAME record
+# pointing to the CDN URL of the container.
 
 # Begin configurable options
-container_name="static"
-index_file="index.html"
-index_content="hello world"
-domain="static.net"
-email_addr="static@static.net"
-CNAME="static.static.net"
+container_name = "static"
+index_file = "index.html"
+index_content = "hello world"
+domain = "static.net"
+email_addr = "static@static.net"
+CNAME = "static.static.net"
 # End configurable options
 
 import os
@@ -39,73 +45,78 @@ import pyrax.exceptions as exc
 
 creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
 try:
-  pyrax.set_credential_file(creds_file)
+    pyrax.set_credential_file(creds_file)
 except exc.AuthenticationFailed:
-  print 'Failed to authenticate'
-  sys.exit(1)
+    print 'Failed to authenticate'
+    sys.exit(1)
 
 # Create cloudfiles object
 cf = pyrax.cloudfiles
 
+
 # Create container
 def create_container(arg):
-	try:
-	  container = cf.create_container(arg)
-	  print container.name
-	except:
-	  print "Operation failed."
-	  err = sys.exc_info()[0]
-	  print err
-	  sys.exit(1)
+    try:
+        container = cf.create_container(arg)
+        print container.name
+    except:
+        print "Operation failed."
+        err = sys.exc_info()[0]
+        print err
+        sys.exit(1)
+
 
 # CDN enable container
 def cdn_enable(arg):
-	try:
-	  cf.make_container_public(arg)
-	  print 'CDN enabled'
-	except:
-	  print "Operation failed."
-	  err = sys.exc_info()[0]
-	  print err
-	  sys.exit(1)
+    try:
+        cf.make_container_public(arg)
+        print 'CDN enabled'
+    except:
+        print "Operation failed."
+        err = sys.exc_info()[0]
+        print err
+        sys.exit(1)
+
 
 # Upload (object)
 def upload(remote, local):
-        try:
-          object = cf.upload_file(remote, local)
-          print object.name
-        except:
-          print "Operation failed."
-	  err = sys.exc_info()[0]
-	  print err
-	  sys.exit(1)
+    try:
+        object = cf.upload_file(remote, local)
+        print object.name
+    except:
+        print "Operation failed."
+        err = sys.exc_info()[0]
+        print err
+        sys.exit(1)
+
 
 # Set container metadata
 def set_meta(cont, key, value):
-	try:
-	  meta = {key: value}
-	  cf.set_container_metadata(cont, meta)
-	except:
-	  print "Operation failed."
-	  err = sys.exc_info()[0]
-	  print err
-	  sys.exit(1)
+    try:
+        meta = {key: value}
+        cf.set_container_metadata(cont, meta)
+    except:
+        print "Operation failed."
+        err = sys.exc_info()[0]
+        print err
+        sys.exit(1)
 
 
 cf.create_container(container_name)
 cdn_enable(container_name)
-set_meta (container_name, 'X-Container-Meta-Web-Index', index_file)
-with open (index_file, 'a') as f: f.write(index_content)
+set_meta(container_name, 'X-Container-Meta-Web-Index', index_file)
+with open(index_file, 'a') as f:
+    f.write(index_content)
 upload(container_name, index_file)
 container = cf.get_container(container_name)
 
 dns = pyrax.cloud_dns
 
 try:
-  dom = dns.find(name=domain)
+    dom = dns.find(name=domain)
 
 except pyrax.exceptions.NotFound:
-  dom = dns.create(name=domain, emailAddress=email_addr)
+    dom = dns.create(name=domain, emailAddress=email_addr)
 
 recs = [{
         "type": "CNAME",
@@ -115,8 +126,8 @@ recs = [{
         ]
 
 try:
-  print dom.add_records(recs)
+    print dom.add_records(recs)
 except:
-  err = sys.exc_info()[0]
-  print err
-  sys.exit(1)
+    err = sys.exc_info()[0]
+    print err
+    sys.exit(1)
