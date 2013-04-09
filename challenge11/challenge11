@@ -52,6 +52,7 @@ import os
 import sys
 from OpenSSL import crypto, SSL
 import argparse
+import ConfigParser
 
 # Authentication
 # Configure credentials/region
@@ -62,8 +63,11 @@ import argparse
 # api_key = someapikey
 # region = DFW
 creds_file = os.path.expanduser('~/.rackspace_cloud_credentials')
+config = ConfigParser.SafeConfigParser()
+config.read(creds_file)
+region = config.get('rackspace_cloud', 'region')
 try:
-    pyrax.set_credential_file(creds_file)
+    pyrax.set_credential_file(creds_file, region)
 except exc.AuthenticationFailed:
     print 'Failed to authenticate'
     sys.exit(1)
