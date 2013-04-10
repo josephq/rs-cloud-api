@@ -53,6 +53,7 @@ import sys
 from OpenSSL import crypto, SSL
 import argparse
 import ConfigParser
+import re
 
 # Authentication
 # Configure credentials/region
@@ -202,6 +203,11 @@ while True:
             try:
                 dom = dns.create(name=thisDomain, emailAddress=emailAddr)
                 break
+            except pyrax.exceptions.DomainCreationFailed:
+                print sys.exc_info()[1]
+                if re.match('Domain already exists', str(sys.exc_info()[1])):
+                    print 'Found domain actually already exists. Continuing.'
+                    break
             except:
                 print 'Error adding domain'
                 print 'Error was:'
