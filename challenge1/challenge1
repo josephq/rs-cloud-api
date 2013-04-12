@@ -2,14 +2,14 @@
 # Copyright 2013 Joseph Quinn
 # All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# Licensed under the Apache License, Version 2.0 (the 'License'); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -18,9 +18,9 @@
 # Write a script that builds three 512 MB Cloud Servers following a similar naming convention.
 
 # Start configurable options
-server_base_name = "Base"
+server_base_name = 'Base'
 num_servers = 3
-image_name = "CentOS 6.3"
+image_name = 'CentOS 6.3'
 ram_size = 512
 # End configuration options
 
@@ -41,7 +41,7 @@ import ConfigParser
 # api_key = someapikey
 # region = DFW
 
-creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
+creds_file = os.path.expanduser('~/.rackspace_cloud_credentials')
 config = ConfigParser.SafeConfigParser()
 config.read(creds_file)
 try:
@@ -78,7 +78,7 @@ serverCreateTime = datetime.datetime.now()
 # Start building servers
 for doServer in range(num_servers):
     doThisServer = server_base_name + str(doServer)
-    print "Creating server " + doThisServer
+    print 'Creating server ', doThisServer
     thisServer = cs.servers.create(doThisServer, server_image.id, server_flavor.id)
     serverData[doServer] = thisServer
 
@@ -92,13 +92,13 @@ while serversComplete != num_servers:
         doThisServer = server_base_name + str(doServer)
         thisServer = cs.servers.find(name=doThisServer)
         print datetime.datetime.now()
-        print "Server Name: " + thisServer.name
-        print "Server ID: " + thisServer.id
-        print "Server Status: " + thisServer.status
-        print "Progress: " + str(thisServer.progress)
+        print 'Server Name: ', thisServer.name
+        print 'Server ID: ', thisServer.id
+        print 'Server Status: ', thisServer.status
+        print 'Progress: ', str(thisServer.progress)
         print
 
-        if thisServer.status == "ACTIVE":
+        if thisServer.status == 'ACTIVE':
             serversComplete += 1
     time.sleep(20)
 
@@ -110,15 +110,15 @@ print
 for doServer in range(num_servers):
     doThisServer = server_base_name + str(doServer)
 
-    print "Server Name: ", serverData[doServer].name
-    print "Root Password: ", serverData[doServer].adminPass
-    print "Public IPs: ", serverData[doServer].networks['public'][0], serverData[doServer].networks['public'][1]
-    print "Private IPv4: ", serverData[doServer].networks['private'][0]
+    print 'Server Name: ', serverData[doServer].name
+    print 'Root Password: ', serverData[doServer].adminPass
+    print 'Public IPs: ', serverData[doServer].networks['public'][0], serverData[doServer].networks['public'][1]
+    print 'Private IPv4: ', serverData[doServer].networks['private'][0]
     print
 
     automationCompleteTime = datetime.datetime.now()
     totalDeployTime = automationCompleteTime-serverCreateTime
     print
 
-print 'Time: ' + str(totalDeployTime)
+print 'Time: ', str(totalDeployTime)
 sys.exit(0)

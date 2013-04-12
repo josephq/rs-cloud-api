@@ -2,14 +2,14 @@
 # Copyright 2013 Joseph Quinn
 # All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# Licensed under the Apache License, Version 2.0 (the 'License'); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -33,7 +33,7 @@ import ConfigParser
 # region = DFW
 
 
-creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
+creds_file = os.path.expanduser('~/.rackspace_cloud_credentials')
 config = ConfigParser.SafeConfigParser()
 config.read(creds_file)
 try:
@@ -42,7 +42,7 @@ except ConfigParser.NoOptionError:
     region = 'DFW'
 except:
     print sys.exc_info()[:2]
-    sys.exit(-1)
+    sys.exit(1)
 
 try:
     pyrax.set_credential_file(creds_file, region)
@@ -58,11 +58,10 @@ cf = pyrax.cloudfiles
 def create_container(arg):
     try:
         container = cf.create_container(arg)
-        print "Created", container.name
+        print 'Created', container.name
     except:
-        print "Operation failed."
-        err = sys.exc_info()[0]
-        print err
+        print 'Operation failed.'
+        print sys.exc_info()[:2]
         sys.exit(1)
 
 
@@ -70,11 +69,10 @@ def create_container(arg):
 def cdn_enable(arg):
     try:
         cf.make_container_public(arg)
-        print "CDN enabled"
+        print 'CDN enabled'
     except:
-        print "Operation failed."
-        err = sys.exc_info()[0]
-        print err
+        print 'Operation failed.'
+        print sys.exc_info()[:2]
         sys.exit(1)
 
 
@@ -84,15 +82,14 @@ def create_cdn_container(option, opt, value, parer):
         create_container(parser.rargs[0])
         cdn_enable(parser.rargs[0])
     except:
-        print "Operation failed."
-        err = sys.exc_info()[0]
-        print err
+        print 'Operation failed.'
+        print sys.exc_info()[:2]
         sys.exit(1)
 
 
 # Read CLI arguments
 parser = OptionParser()
-parser.add_option("-c", "--create-cdn-container", action="callback", callback=create_cdn_container)
+parser.add_option('-c', '--create-cdn-container', action='callback', callback=create_cdn_container)
 (opts, args) = parser.parse_args()
 
 if not args:

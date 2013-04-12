@@ -2,20 +2,20 @@
 # Copyright 2013 Joseph Quinn
 # All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# Licensed under the Apache License, Version 2.0 (the 'License'); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
 #
 # Challenge 9:
-# Write an application that when passed the arguments FQDN, image, and flavor 
+# Write an application that when passed the arguments FQDN, image, and flavor
 # it creates a server of the specified image and flavor with the same name as the fqdn,
 # and creates a DNS entry for the fqdn pointing to the server's public IP.
 
@@ -38,7 +38,7 @@ import ConfigParser
 # api_key = someapikey
 # region = DFW
 
-creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
+creds_file = os.path.expanduser('~/.rackspace_cloud_credentials')
 config = ConfigParser.SafeConfigParser()
 config.read(creds_file)
 try:
@@ -58,15 +58,15 @@ except exc.AuthenticationFailed:
 
 def list_images(option, opt, value, parser):
     for image in cs.images.list():
-        print "Image Name:", image.name
-        print "Image ID:", image.id
+        print 'Image Name:', image.name
+        print 'Image ID:', image.id
         print
 
 
 def list_flavors(option, opt, value, parser):
     for flavor in cs.flavors.list():
-        print "Flavor Name:", flavor.name
-        print "Flavor ID:", flavor.id
+        print 'Flavor Name:', flavor.name
+        print 'Flavor ID:', flavor.id
         print
 
 
@@ -106,10 +106,10 @@ def create_server(option, opt, value, parser):
     while server.status != 'ACTIVE':
         server.get()
         print
-        print "Server Name:", server.name
-        print "Server ID:", server.id
-        print "Server Status:", server.status
-        print "Progress:", server.progress
+        print 'Server Name:', server.name
+        print 'Server ID:', server.id
+        print 'Server Status:', server.status
+        print 'Progress:', server.progress
         time.sleep(30)
 
     for ip in server.networks['public']:
@@ -117,10 +117,10 @@ def create_server(option, opt, value, parser):
             publicIPv4 = ip
 
     print
-    print "Server Name: ", server.name
-    print "Root Password: ", server.adminPass
-    print "Public IPv4: ", publicIPv4
-    print "Private IPv4: ", server.networks['private'][0]
+    print 'Server Name: ', server.name
+    print 'Root Password: ', server.adminPass
+    print 'Public IPv4: ', publicIPv4
+    print 'Private IPv4: ', server.networks['private'][0]
     print
 
     thisName, thisTLD = server_fqdn.split('.')[-2:]
@@ -130,10 +130,10 @@ def create_server(option, opt, value, parser):
         dom = dns.find(name=thisDomain)
 
     except pyrax.exceptions.NotFound:
-        print "Domain", thisDomain, "not found. Create it?"
-        prompt = raw_input("y/n ")
+        print 'Domain', thisDomain, 'not found. Create it?'
+        prompt = raw_input('y/n ')
 
-        if prompt == "y":
+        if prompt == 'y':
             emailAddr = raw_input('Email address: ')
             dom = dns.create(name=thisDomain, emailAddress=emailAddr)
         else:
@@ -141,9 +141,9 @@ def create_server(option, opt, value, parser):
             exit(0)
 
     recs = [{
-            "type": "A",
-            "name": server_fqdn,
-            "data": publicIPv4,
+            'type': 'A',
+            'name': server_fqdn,
+            'data': publicIPv4,
             }
             ]
 
@@ -161,9 +161,9 @@ cs = pyrax.cloudservers
 dns = pyrax.cloud_dns
 
 parser = OptionParser()
-parser.add_option("-c", "--create-server", action="callback", callback=create_server, help="Create server FlavorID ImageID FQDN")
-parser.add_option("--list-images", action="callback", callback=list_images)
-parser.add_option("--list-flavors", action="callback", callback=list_flavors)
+parser.add_option('-c', '--create-server', action='callback', callback=create_server, help='Create server FlavorID ImageID FQDN')
+parser.add_option('--list-images', action='callback', callback=list_images)
+parser.add_option('--list-flavors', action='callback', callback=list_flavors)
 
 (opts, args) = parser.parse_args()
 

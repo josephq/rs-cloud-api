@@ -2,14 +2,14 @@
 # Copyright 2013 Joseph Quinn
 # All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# Licensed under the Apache License, Version 2.0 (the 'License'); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -34,7 +34,7 @@ import ConfigParser
 # api_key = someapikey
 # region = DFW
 
-creds_file = os.path.expanduser("~/.rackspace_cloud_credentials")
+creds_file = os.path.expanduser('~/.rackspace_cloud_credentials')
 config = ConfigParser.SafeConfigParser()
 config.read(creds_file)
 try:
@@ -59,29 +59,29 @@ def getVal(obj, key):
 
 
 def waitImage(server):
-    sys.stdout.write("Waiting for image creation to begin...")
+    sys.stdout.write('Waiting for image creation to begin...')
     sys.stdout.flush()
     while True:
         obj = cs.servers.find(name=server)
-        sys.stdout.write(".")
+        sys.stdout.write('.')
         sys.stdout.flush()
         if getVal(obj, 'OS-EXT-STS:task_state') == 'image_snapshot':
             break
         time.sleep(15)
-    sys.stdout.write("\nWaiting for image creation to complete...")
+    sys.stdout.write('\nWaiting for image creation to complete...')
     sys.stdout.flush()
     while True:
         obj = cs.servers.find(name=server)
-        sys.stdout.write(".")
+        sys.stdout.write('.')
         sys.stdout.flush()
         if getVal(obj, 'OS-EXT-STS:task_state') is None:
             break
         time.sleep(15)
 
 parser = OptionParser()
-parser.add_option("-s", "--source", action="store", dest="sourceServer", help="Name of server to clone")
-parser.add_option("-i", "--image-name", action="store", dest="imageName", help="Name for new image")
-parser.add_option("-c", "--create", action="store", dest="createServer", help="Name for new server")
+parser.add_option('-s', '--source', action='store', dest='sourceServer', help='Name of server to clone')
+parser.add_option('-i', '--image-name', action='store', dest='imageName', help='Name for new image')
+parser.add_option('-c', '--create', action='store', dest='createServer', help='Name for new server')
 (opts, args) = parser.parse_args()
 
 if not(opts.sourceServer and opts.imageName and opts.createServer):
@@ -109,14 +109,14 @@ createServerObj = cs.servers.create(opts.createServer, doImage, doFlavor)
 # Wait for server build to complete
 while True:
     thisServer = cs.servers.find(name=opts.createServer)
-    print "Server Status: ", thisServer.status
-    print "Progress: ", str(thisServer.progress)
-    if thisServer.status == "ACTIVE":
+    print 'Server Status: ', thisServer.status
+    print 'Progress: ', str(thisServer.progress)
+    if thisServer.status == 'ACTIVE':
         break
     time.sleep(15)
 
 # Print server details
-print "Server Name: ", thisServer.name
-print "Root Password: ", createServerObj.adminPass
-print "Public IPs: ", thisServer.networks['public'][0], thisServer.networks['public'][1]
-print "Private IPv4: ", thisServer.networks['private'][0]
+print 'Server Name: ', thisServer.name
+print 'Root Password: ', createServerObj.adminPass
+print 'Public IPs: ', thisServer.networks['public'][0], thisServer.networks['public'][1]
+print 'Private IPv4: ', thisServer.networks['private'][0]

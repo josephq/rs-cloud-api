@@ -295,7 +295,7 @@ print
 
 for doServer in range(num_servers):
     doThisServer = server_base_name + str(doServer)
-    print 'Creating server ' + doThisServer
+    print 'Creating server ', doThisServer
     while True:
         try:
             server[doServer] = cs.servers.create(doThisServer, server_image.id, server_flavor.id, nics=networks)
@@ -335,10 +335,10 @@ while serversComplete < num_servers:
                     TryAgain('Error creating server.')
 
         print datetime.datetime.now()
-        print 'Server Name: ' + server[doServer].name
-        print 'Server ID: ' + server[doServer].id
-        print 'Server Status: ' + server[doServer].status
-        print 'Progress: ' + str(server[doServer].progress)
+        print 'Server Name: ', server[doServer].name
+        print 'Server ID: ', server[doServer].id
+        print 'Server Status: ', server[doServer].status
+        print 'Progress: ', str(server[doServer].progress)
         print
 
         if server[doServer].status == 'ACTIVE':
@@ -522,8 +522,8 @@ print
 
 for doServer in range(num_servers):
 
-    print 'Server Name: ' + server[doServer].name
-    print 'Root Password: ' + server[doServer].adminPass
+    print 'Server Name: ', server[doServer].name
+    print 'Root Password: ', server[doServer].adminPass
 
     for thisIP in server[doServer].networks['public']:
         if '.' in thisIP:
@@ -538,4 +538,4 @@ print 'Public IPv4:', lb_ip
 automationCompleteTime = datetime.datetime.now()
 totalDeployTime = automationCompleteTime-serverCreateTime
 print
-print 'Time: ' + str(totalDeployTime)
+print 'Time: ', str(totalDeployTime)
