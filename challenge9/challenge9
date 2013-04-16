@@ -26,7 +26,7 @@ import datetime
 import os
 import sys
 import re
-from optparse import OptionParser
+import argparse
 import ConfigParser
 
 # Authentication
@@ -47,7 +47,7 @@ except ConfigParser.NoOptionError:
     region = 'DFW'
 except:
     print sys.exc_info()[:2]
-    sys.exit(-1)
+    sys.exit(1)
 
 try:
     pyrax.set_credential_file(creds_file, region)
@@ -56,116 +56,119 @@ except exc.AuthenticationFailed:
     sys.exit(1)
 
 
-def list_images(option, opt, value, parser):
-    for image in cs.images.list():
-        print 'Image Name:', image.name
-        print 'Image ID:', image.id
+class list_images(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        for image in cs.images.list():
+            print 'Image Name:', image.name
+            print 'Image ID:', image.id
+            print
+
+
+class list_flavors(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        for flavor in cs.flavors.list():
+            print 'Flavor Name:', flavor.name
+            print 'Flavor ID:', flavor.id
+            print
+
+
+class create_server(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+
+        for arg in values:
+            if [flv for flv in cs.flavors.list() if arg == flv.id]:
+                server_flavor = cs.flavors.get(arg)
+            elif [img for img in cs.images.list() if arg == img.id]:
+                server_image = cs.images.get(arg)
+            elif '.' in arg:
+                server_fqdn = arg
+
+        try:
+            print 'Flavor:', server_flavor.name
+        except:
+            print 'You must provide a flavor ID'
+            parser.print_help()
+            exit(-1)
+
+        try:
+            print 'Image:', server_image.name
+        except:
+            print 'You must provide an image ID'
+            parser.print_help()
+            exit(-1)
+
+        try:
+            print 'FQDN:', server_fqdn
+        except:
+            print 'You must provide an FQDN'
+            parser.print_help()
+            exit(-1)
+
+        server = cs.servers.create(server_fqdn, server_image, server_flavor)
+
+        while server.status != 'ACTIVE':
+            server.get()
+            print
+            print 'Server Name:', server.name
+            print 'Server ID:', server.id
+            print 'Server Status:', server.status
+            print 'Progress:', server.progress
+            time.sleep(30)
+
+        for ip in server.networks['public']:
+            if '.' in ip:
+                publicIPv4 = ip
+
+        print
+        print 'Server Name: ', server.name
+        print 'Root Password: ', server.adminPass
+        print 'Public IPv4: ', publicIPv4
+        print 'Private IPv4: ', server.networks['private'][0]
         print
 
+        thisName, thisTLD = server_fqdn.split('.')[-2:]
+        thisDomain = thisName + '.' + thisTLD
 
-def list_flavors(option, opt, value, parser):
-    for flavor in cs.flavors.list():
-        print 'Flavor Name:', flavor.name
-        print 'Flavor ID:', flavor.id
-        print
+        try:
+            dom = dns.find(name=thisDomain)
 
+        except pyrax.exceptions.NotFound:
+            print 'Domain', thisDomain, 'not found. Create it?'
+            prompt = raw_input('y/n ')
 
-def create_server(option, opt, value, parser):
+            if prompt == 'y':
+                emailAddr = raw_input('Email address: ')
+                dom = dns.create(name=thisDomain, emailAddress=emailAddr)
+            else:
+                print 'Exiting'
+                exit(0)
 
-    for arg in parser.rargs:
-        if [flv for flv in cs.flavors.list() if arg == flv.id]:
-            server_flavor = cs.flavors.get(arg)
-        elif [img for img in cs.images.list() if arg == img.id]:
-            server_image = cs.images.get(arg)
-        elif '.' in arg:
-            server_fqdn = arg
+        recs = [{
+                'type': 'A',
+                'name': server_fqdn,
+                'data': publicIPv4,
+                }
+                ]
 
-    try:
-        print 'Flavor:', server_flavor.name
-    except:
-        print 'You must provide a flavor ID'
-        parser.print_help()
-        exit(-1)
-
-    try:
-        print 'Image:', server_image.name
-    except:
-        print 'You must provide an image ID'
-        parser.print_help()
-        exit(-1)
-
-    try:
-        print 'FQDN:', server_fqdn
-    except:
-        print 'You must provide an FQDN'
-        parser.print_help()
-        exit(-1)
-
-    server = cs.servers.create(server_fqdn, server_image, server_flavor)
-
-    while server.status != 'ACTIVE':
-        server.get()
-        print
-        print 'Server Name:', server.name
-        print 'Server ID:', server.id
-        print 'Server Status:', server.status
-        print 'Progress:', server.progress
-        time.sleep(30)
-
-    for ip in server.networks['public']:
-        if '.' in ip:
-            publicIPv4 = ip
-
-    print
-    print 'Server Name: ', server.name
-    print 'Root Password: ', server.adminPass
-    print 'Public IPv4: ', publicIPv4
-    print 'Private IPv4: ', server.networks['private'][0]
-    print
-
-    thisName, thisTLD = server_fqdn.split('.')[-2:]
-    thisDomain = thisName + '.' + thisTLD
-
-    try:
-        dom = dns.find(name=thisDomain)
-
-    except pyrax.exceptions.NotFound:
-        print 'Domain', thisDomain, 'not found. Create it?'
-        prompt = raw_input('y/n ')
-
-        if prompt == 'y':
-            emailAddr = raw_input('Email address: ')
-            dom = dns.create(name=thisDomain, emailAddress=emailAddr)
-        else:
-            print 'Exiting'
-            exit(0)
-
-    recs = [{
-            'type': 'A',
-            'name': server_fqdn,
-            'data': publicIPv4,
-            }
-            ]
-
-    try:
-        record = dom.add_records(recs)
-        record = dom.find_record(name=server_fqdn, record_type='A')
-        print record.type, 'record created for', record.name, 'with data', record.data
-    except:
-        err = sys.exc_info()[0]
-        print err
-        sys.exit(1)
+        try:
+            record = dom.add_records(recs)
+            record = dom.find_record(name=server_fqdn, record_type='A')
+            print record.type, 'record created for', record.name, 'with data', record.data
+        except:
+            err = sys.exc_info()[0]
+            print err
+            sys.exit(1)
 
 
 cs = pyrax.cloudservers
 dns = pyrax.cloud_dns
 
-parser = OptionParser()
-parser.add_option('-c', '--create-server', action='callback', callback=create_server, help='Create server FlavorID ImageID FQDN')
-parser.add_option('--list-images', action='callback', callback=list_images)
-parser.add_option('--list-flavors', action='callback', callback=list_flavors)
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--create-server', nargs=3, action=create_server, help='Create server FlavorID ImageID FQDN')
+parser.add_argument('--list-images', nargs=0, action=list_images)
+parser.add_argument('--list-flavors', nargs=0, action=list_flavors)
 
-(opts, args) = parser.parse_args()
+args = parser.parse_args()
 
-if not args:
+if not len(sys.argv) > 1:
     print parser.print_help()

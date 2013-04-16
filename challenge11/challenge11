@@ -256,7 +256,7 @@ while True:
         print 'Error was:'
         for val in sys.exc_info()[:2]:
             print val
-        sys.exit()
+        sys.exit(1)
 
 networks = isolated.get_server_networks(public=True, private=True)
 

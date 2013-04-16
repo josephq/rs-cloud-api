@@ -19,7 +19,7 @@
 
 import os
 import sys
-from optparse import OptionParser
+import argparse
 import pyrax
 import pyrax.exceptions as exc
 import ConfigParser
@@ -44,25 +44,25 @@ except ConfigParser.NoOptionError:
     region = 'DFW'
 except:
     print sys.exc_info()[:2]
-    sys.exit(-1)
+    sys.exit(1)
 
 try:
     pyrax.set_credential_file(creds_file, region)
 except exc.AuthenticationFailed:
     print 'Failed to authenticate'
 
-parser = OptionParser()
-parser.add_option('-n', '--fqdn', action='store', dest='fqdn', help='Name of A record')
-parser.add_option('-i', '--ip', action='store', dest='ip', help='IP for A record')
-(opts, args) = parser.parse_args()
+parser = argparse.ArgumentParser()
+parser.add_argument('-n', '--fqdn', action='store', dest='fqdn', help='Name of A record')
+parser.add_argument('-i', '--ip', action='store', dest='ip', help='IP for A record')
+args = parser.parse_args()
 
-if not(opts.fqdn and opts.ip):
+if not(args.fqdn and args.ip):
     parser.print_help()
-    exit(-1)
+    exit(1)
 
 dns = pyrax.cloud_dns
 
-thisName, thisTLD = opts.fqdn.split('.')[-2:]
+thisName, thisTLD = args.fqdn.split('.')[-2:]
 thisDomain = thisName + '.' + thisTLD
 
 try:
@@ -81,8 +81,8 @@ except pyrax.exceptions.NotFound:
 
 recs = [{
         'type': 'A',
-        'name': opts.fqdn,
-        'data': opts.ip,
+        'name': args.fqdn,
+        'data': args.ip,
         }
         ]
 

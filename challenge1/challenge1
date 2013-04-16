@@ -50,7 +50,7 @@ except ConfigParser.NoOptionError:
     region = 'DFW'
 except:
     print sys.exc_info()[:2]
-    sys.exit(-1)
+    sys.exit(1)
 
 try:
     pyrax.set_credential_file(creds_file, region)
@@ -69,8 +69,8 @@ server_image = [img for img in cs.images.list()
 server_flavor = [flavor for flavor in cs.flavors.list()
                  if flavor.ram == ram_size][0]
 
-# Initialize serverData
-serverData = {}
+# Initialize server
+server = {}
 
 # Capture time
 serverCreateTime = datetime.datetime.now()
@@ -79,26 +79,24 @@ serverCreateTime = datetime.datetime.now()
 for doServer in range(num_servers):
     doThisServer = server_base_name + str(doServer)
     print 'Creating server ', doThisServer
-    thisServer = cs.servers.create(doThisServer, server_image.id, server_flavor.id)
-    serverData[doServer] = thisServer
+    server[doServer] = cs.servers.create(doThisServer, server_image.id, server_flavor.id)
 
 # Outer loop to monitor build. Run until all servers complete.
 serversComplete = 0
-while serversComplete != num_servers:
+while serversComplete < num_servers:
     serversComplete = 0
 
 # Inner loop to monitor build
     for doServer in range(num_servers):
-        doThisServer = server_base_name + str(doServer)
-        thisServer = cs.servers.find(name=doThisServer)
+        server[doServer].get()
         print datetime.datetime.now()
-        print 'Server Name: ', thisServer.name
-        print 'Server ID: ', thisServer.id
-        print 'Server Status: ', thisServer.status
-        print 'Progress: ', str(thisServer.progress)
+        print 'Server Name: ', server[doServer].name
+        print 'Server ID: ', server[doServer].id
+        print 'Server Status: ', server[doServer].status
+        print 'Progress: ', server[doServer].progress
         print
 
-        if thisServer.status == 'ACTIVE':
+        if server[doServer].status == 'ACTIVE':
             serversComplete += 1
     time.sleep(20)
 
@@ -108,17 +106,16 @@ print 'All servers complete!'
 print
 
 for doServer in range(num_servers):
-    doThisServer = server_base_name + str(doServer)
 
-    print 'Server Name: ', serverData[doServer].name
-    print 'Root Password: ', serverData[doServer].adminPass
-    print 'Public IPs: ', serverData[doServer].networks['public'][0], serverData[doServer].networks['public'][1]
-    print 'Private IPv4: ', serverData[doServer].networks['private'][0]
+    print 'Server Name: ', server[doServer].name
+    print 'Root Password: ', server[doServer].adminPass
+    print 'Public IPs: ', server[doServer].networks['public'][0], '/', server[doServer].networks['public'][1]
+    print 'Private IPv4: ', server[doServer].networks['private'][0]
     print
 
     automationCompleteTime = datetime.datetime.now()
     totalDeployTime = automationCompleteTime-serverCreateTime
     print
 
-print 'Time: ', str(totalDeployTime)
+print 'Time: ', totalDeployTime
 sys.exit(0)

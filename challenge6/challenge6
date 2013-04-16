@@ -18,7 +18,7 @@
 
 import os
 import sys
-from optparse import OptionParser
+import argparse
 import pyrax
 import pyrax.exceptions as exc
 import ConfigParser
@@ -31,7 +31,6 @@ import ConfigParser
 # username = someuser
 # api_key = someapikey
 # region = DFW
-
 
 creds_file = os.path.expanduser('~/.rackspace_cloud_credentials')
 config = ConfigParser.SafeConfigParser()
@@ -77,20 +76,21 @@ def cdn_enable(arg):
 
 
 # Create and CDN enable container
-def create_cdn_container(option, opt, value, parer):
-    try:
-        create_container(parser.rargs[0])
-        cdn_enable(parser.rargs[0])
-    except:
-        print 'Operation failed.'
-        print sys.exc_info()[:2]
-        sys.exit(1)
+class create_cdn_container(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        try:
+            create_container(values)
+            cdn_enable(values)
+        except:
+            print 'Operation failed.'
+            print sys.exc_info()[:2]
+            sys.exit(1)
 
 
 # Read CLI arguments
-parser = OptionParser()
-parser.add_option('-c', '--create-cdn-container', action='callback', callback=create_cdn_container)
-(opts, args) = parser.parse_args()
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--create-cdn-container', action=create_cdn_container)
+args = parser.parse_args()
 
-if not args:
+if not len(sys.argv) > 1:
     print parser.print_help()
