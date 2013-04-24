@@ -63,10 +63,18 @@ import re
 # username = someuser
 # api_key = someapikey
 # region = DFW
+
 creds_file = os.path.expanduser('~/.rackspace_cloud_credentials')
 config = ConfigParser.SafeConfigParser()
 config.read(creds_file)
-region = config.get('rackspace_cloud', 'region')
+try:
+    region = config.get('rackspace_cloud', 'region')
+except ConfigParser.NoOptionError:
+    region = 'DFW'
+except:
+    print sys.exc_info()[:2]
+    sys.exit(1)
+
 try:
     pyrax.set_credential_file(creds_file, region)
 except exc.AuthenticationFailed:
